@@ -162,5 +162,82 @@ if current_key != '#':
 These scripts implement the Mapper and Reducer functions for PageRank computation on a network of online forums based on user interactions and discussions. The mapper script emits the graph structure and initializes PageRank values for posts and users. The reducer script accumulates the graph data and calculates PageRank scores iteratively for each node type (posts and users). Finally, it emits the PageRank scores for each node. These scripts can be run in a Hadoop or MapReduce environment for analyzing large datasets of forum post interactions.
 
 
+Frequent Item Sets - Easy Task
+    Idea: Identify frequently co-purchased items in a retail store to optimize product placement on shelves.
+    Input: Point-of-sale transaction data (transaction ID, purchased items).
+    Output: List of frequently co-purchased item sets and their support counts.
+
+ChatGPT
+For identifying frequently co-purchased items in a retail store using the Apriori algorithm, you'll need to implement a Mapper and Reducer for the task. Below are the separate mapper.py and reducer.py scripts for this task:
+
+mapper.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
+from itertools import combinations
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into transaction ID and purchased items
+    transaction_id, items = line.strip().split('\t')
+    items = items.split(',')
+
+    # Generate item pairs from the purchased items
+    for pair in combinations(items, 2):
+        # Sort the pair to avoid duplicates
+        pair = sorted(pair)
+        # Emit the pair as key with count 1
+        print('%s\t%s' % (','.join(pair), 1))
+reducer.py
+python
+Copy code
+#!/usr/bin/env python
+from collections import defaultdict
+import sys
+
+# Initialize variables
+current_pair = None
+current_count = 0
+pair_count = defaultdict(int)
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into key and count
+    pair, count = line.strip().split('\t')
+
+    # Convert count to integer
+    count = int(count)
+
+    # If the pair changes, process the previous pair's data
+    if current_pair and pair != current_pair:
+        # Emit the pair and its count
+        print('%s\t%s' % (current_pair, current_count))
+        # Reset count for the new pair
+        current_count = 0
+    
+    # Update current pair and count
+    current_pair = pair
+    current_count += count
+
+# Process the last pair's data
+if current_pair:
+    print('%s\t%s' % (current_pair, current_count))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
