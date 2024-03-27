@@ -225,7 +225,347 @@ if current_pair:
     print('%s\t%s' % (current_pair, current_count))
 
 
+Google Matrix - Easy Task
+    Idea: Analyze communication patterns in a corporate email network to identify key employees for organizational restructuring.
+    Input: Email communication data (sender, receiver, timestamp).
+    Output: Ranking of employees based on their importance computed using the Google Matrix.
+ChatGPT
+To compute the Google Matrix for analyzing communication patterns in a corporate email network and identifying key employees, you can use the Mapper and Reducer approach. Below are the separate mapper.py and reducer.py scripts for this task:
 
+mapper.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into sender, receiver, and timestamp
+    sender, receiver, timestamp = line.strip().split('\t')
+
+    # Emit sender-receiver pair as key with count 1
+    print('%s\t%s' % (sender, receiver))
+reducer.py
+python
+Copy code
+#!/usr/bin/env python
+from collections import defaultdict
+import sys
+
+# Initialize variables
+adjacency_list = defaultdict(list)
+pageranks = defaultdict(float)
+damping_factor = 0.85
+N = 0  # Total number of employees
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into sender and receiver
+    sender, receiver = line.strip().split('\t')
+
+    # Build adjacency list
+    adjacency_list[sender].append(receiver)
+
+    # Increment the total number of employees
+    N += 1
+
+# Initialize PageRank values
+for employee in adjacency_list:
+    pageranks[employee] = 1.0 / N
+
+# Perform PageRank iterations
+for _ in range(10):  # 10 iterations for convergence
+    new_pageranks = defaultdict(float)
+    for sender in adjacency_list:
+        new_pagerank = (1 - damping_factor) / N
+        for receiver in adjacency_list[sender]:
+            new_pagerank += damping_factor * pageranks[receiver] / len(adjacency_list[receiver])
+        new_pageranks[sender] = new_pagerank
+    pageranks = new_pageranks
+
+# Emit the ranking of employees based on their importance
+for employee, importance in sorted(pageranks.items(), key=lambda x: x[1], reverse=True):
+    print('%s\t%s' % (employee, importance))
+These scripts implement the Mapper and Reducer for computing the Google Matrix on email communication data to identify key employees in a corporate network. The mapper script emits sender-receiver pairs from the email communication data. The reducer script builds the adjacency list from the emitted pairs, computes PageRank scores iteratively, and finally emits the ranking of employees based on their importance computed using the Google Matrix. These scripts can be executed in a Hadoop or MapReduce environment to analyze large datasets of email communication data.
+
+
+
+
+write one for word count too
+ChatGPT
+Certainly! Below are the separate mapper.py and reducer.py scripts for implementing word count:
+
+mapper.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into words
+    words = line.strip().split()
+
+    # Emit each word as key with count 1
+    for word in words:
+        print('%s\t%s' % (word, 1))
+reducer.py
+python
+Copy code
+#!/usr/bin/env python
+from collections import defaultdict
+import sys
+
+# Initialize variables
+word_counts = defaultdict(int)
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into word and count
+    word, count = line.strip().split('\t')
+
+    # Update word counts
+    word_counts[word] += int(count)
+
+# Emit the word counts
+for word, count in word_counts.items():
+    print('%s\t%s' % (word, count))
+These scripts implement the Mapper and Reducer for counting the occurrences of each word in a text corpus. The mapper script reads input text and emits each word encountered along with a count of 1. The reducer script aggregates the counts for each word and emits the total count for each word. When executed in a Hadoop or MapReduce environment, these scripts can efficiently perform word count on large text datasets.
+
+User
+one for LSH
+ChatGPT
+Locality Sensitive Hashing (LSH) is a technique used for approximate nearest neighbor search in high-dimensional spaces. Below are the separate mapper.py and reducer.py scripts for implementing LSH:
+
+mapper.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
+
+# Constants for LSH
+BANDS = 5
+ROWS_PER_BAND = 4
+
+# Function to hash a vector using LSH
+def lsh_hash(vector):
+    hash_value = ''
+    for i in range(BANDS):
+        band_hash = hash(tuple(vector[i * ROWS_PER_BAND:(i + 1) * ROWS_PER_BAND])) % 1000
+        hash_value += str(band_hash) + ','
+    return hash_value[:-1]
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into data point ID and vector
+    data_point_id, vector_str = line.strip().split('\t')
+
+    # Convert vector string to list of integers
+    vector = [int(x) for x in vector_str.split(',')]
+
+    # Apply LSH to the vector and emit hash value along with data point ID
+    hash_value = lsh_hash(vector)
+    print('%s\t%s' % (hash_value, data_point_id))
+reducer.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into hash value and data point ID
+    hash_value, data_point_id = line.strip().split('\t')
+
+    # Emit hash value and associated data point ID
+    print('%s\t%s' % (hash_value, data_point_id))
+These scripts implement the Mapper and Reducer for Locality Sensitive Hashing (LSH). The mapper script hashes the input vectors using LSH and emits the hash value along with the corresponding data point ID. The reducer script simply forwards the hash value and associated data point ID to the output. In a full LSH implementation, these outputs would be processed further to identify approximate nearest neighbors. These scripts can be run in a Hadoop or MapReduce environment for analyzing large datasets requiring approximate nearest neighbor search.
+
+
+
+
+
+ONE FOR CONFIDENCE INTERVAL AND INTEREST
+
+ChatGPT
+Confidence intervals are statistical tools used to estimate the range within which a population parameter lies with a certain level of confidence. Below are the separate mapper.py and reducer.py scripts for calculating confidence intervals and interest.
+
+mapper.py (for Confidence Interval)
+python
+Copy code
+#!/usr/bin/env python
+import sys
+import math
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into value and count
+    value, count = line.strip().split('\t')
+
+    # Convert count to integer
+    count = int(count)
+
+    # Emit the value and count
+    print('%s\t%s' % (value, count))
+
+    # Also emit (value^2) and count
+    print('%s\t%s' % (str(float(value) ** 2), count))
+reducer.py (for Confidence Interval)
+python
+Copy code
+#!/usr/bin/env python
+import sys
+import math
+
+# Initialize variables
+sum_values = 0
+sum_squared_values = 0
+total_count = 0
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into value and count
+    value, count = line.strip().split('\t')
+
+    # Convert count to integer
+    count = int(count)
+
+    # Update the sums and total count
+    sum_values += float(value) * count
+    sum_squared_values += float(value) ** 2 * count
+    total_count += count
+
+# Calculate mean and standard deviation
+mean = sum_values / total_count
+variance = (sum_squared_values / total_count) - (mean ** 2)
+std_deviation = math.sqrt(variance)
+
+# Calculate confidence interval
+confidence_interval = 1.96 * (std_deviation / math.sqrt(total_count))
+
+# Emit the mean and confidence interval
+print('Mean\t%s' % mean)
+print('Confidence Interval\t%s' % confidence_interval)
+mapper.py (for Interest)
+python
+Copy code
+#!/usr/bin/env python
+import sys
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into key and value
+    key, value = line.strip().split('\t')
+
+    # Emit the key and value
+    print('%s\t%s' % (key, value))
+reducer.py (for Interest)
+python
+Copy code
+#!/usr/bin/env python
+import sys
+
+# Initialize variables
+sum_values = 0
+total_count = 0
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into key and value
+    key, value = line.strip().split('\t')
+
+    # Convert value to float
+    value = float(value)
+
+    # Update the sum and total count
+    sum_values += value
+    total_count += 1
+
+# Calculate interest
+interest = sum_values / total_count
+
+# Emit the interest
+print('Interest\t%s' % interest)
+These scripts implement the Mapper and Reducer for calculating confidence intervals and interest. The confidence interval scripts calculate the mean and confidence interval of a dataset, while the interest scripts calculate the interest based on the average value of a dataset. These scripts can be run in a Hadoop or MapReduce environment for analyzing large datasets and calculating statistical properties.
+
+ONE FOR BASIC ASSOCIATION RULE
+ChatGPT
+To implement a basic Association Rule mining algorithm in a MapReduce setting, we need two main components: mapper.py and reducer.py. Here's how you can create these scripts:
+
+mapper.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
+from itertools import combinations
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into transaction and items
+    transaction, items = line.strip().split('\t')
+
+    # Split items into a list
+    items_list = items.split(',')
+
+    # Generate item pairs from the transaction
+    for pair in combinations(items_list, 2):
+        # Sort the pair to avoid duplicates
+        pair = sorted(pair)
+        # Emit the pair as key with count 1
+        print('%s\t%s' % (','.join(pair), 1))
+reducer.py
+python
+Copy code
+#!/usr/bin/env python
+from collections import defaultdict
+import sys
+
+# Initialize variables
+current_key = None
+item_count = defaultdict(int)
+total_transactions = 0
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into key and count
+    key, count = line.strip().split('\t')
+
+    # If the key changes, process the previous key's data
+    if current_key and key != current_key:
+        # Calculate support for the current itemset
+        support = item_count[current_key] / total_transactions
+
+        # If support is greater than a threshold, emit association rule
+        if support >= 0.1:  # Example threshold (can be adjusted)
+            itemset = current_key.split(',')
+            antecedent = itemset[0]
+            consequent = itemset[1]
+            confidence = item_count[current_key] / item_count[antecedent]
+            print('%s -> %s\t%s\t%s' % (antecedent, consequent, support, confidence))
+        
+        # Reset count for the new key
+        item_count = defaultdict(int)
+
+    # Update current key
+    current_key = key
+
+    # Update item count and total transactions
+    item_count[key] += int(count)
+    total_transactions += 1
+
+# Process the last key's data
+if current_key:
+    # Calculate support for the last itemset
+    support = item_count[current_key] / total_transactions
+    
+    # If support is greater than a threshold, emit association rule
+    if support >= 0.1:  # Example threshold (can be adjusted)
+        itemset = current_key.split(',')
+        antecedent = itemset[0]
+        consequent = itemset[1]
+        confidence = item_count[current_key] / item_count[antecedent]
+        print('%s -> %s\t%s\t%s' % (antecedent, consequent, support, confidence))
+These scripts implement the Mapper and Reducer for basic Association Rule mining in a MapReduce framework. The mapper script generates item pairs from each transaction and emits them with a count of 1. The reducer script aggregates the counts for each itemset, calculates support and confidence, and emits association rules for those above a certain threshold. Adjust the threshold as needed for your use case. These scripts can be executed in a Hadoop or MapReduce environment to analyze large datasets for frequent itemsets and generate association rules.
 
 
 
