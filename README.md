@@ -567,12 +567,149 @@ if current_key:
         print('%s -> %s\t%s\t%s' % (antecedent, consequent, support, confidence))
 These scripts implement the Mapper and Reducer for basic Association Rule mining in a MapReduce framework. The mapper script generates item pairs from each transaction and emits them with a count of 1. The reducer script aggregates the counts for each itemset, calculates support and confidence, and emits association rules for those above a certain threshold. Adjust the threshold as needed for your use case. These scripts can be executed in a Hadoop or MapReduce environment to analyze large datasets for frequent itemsets and generate association rules.
 
+DO ONE FOR JACCARD SIMILARITY
+ChatGPT
+To compute Jaccard similarity between sets of items in a MapReduce setting, we can create a mapper that emits all pairs of sets along with their intersection size, and then a reducer that calculates the Jaccard similarity for each pair. Here's how you can implement this:
+
+mapper.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
+from itertools import combinations
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into transaction ID and items
+    transaction_id, items_str = line.strip().split('\t')
+
+    # Convert the items string into a set
+    items = set(items_str.split(','))
+
+    # Generate pairs of sets from the input transaction
+    for pair in combinations(items, 2):
+        # Sort the pair to avoid duplicates
+        pair = sorted(pair)
+
+        # Emit the pair of items as key and their intersection size as value
+        print('%s\t%s' % (','.join(pair), len(items)))
+reducer.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
+
+# Initialize variables
+current_pair = None
+current_intersection_size = 0
+current_union_size = 0
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into key and value
+    pair, size = line.strip().split('\t')
+
+    # Convert size to integer
+    size = int(size)
+
+    # If the pair changes, calculate Jaccard similarity
+    if current_pair and pair != current_pair:
+        jaccard_similarity = current_intersection_size / current_union_size
+
+        # Emit the pair and its Jaccard similarity
+        print('%s\t%s' % (current_pair, jaccard_similarity))
+
+        # Reset variables for the new pair
+        current_intersection_size = 0
+        current_union_size = 0
+
+    # Update current pair
+    current_pair = pair
+
+    # Update intersection size
+    current_intersection_size += size
+
+    # Update union size
+    current_union_size += size
+
+# Calculate Jaccard similarity for the last pair
+if current_pair:
+    jaccard_similarity = current_intersection_size / current_union_size
+    print('%s\t%s' % (current_pair, jaccard_similarity))
+These scripts implement the Mapper and Reducer for computing Jaccard similarity between sets of items in a MapReduce framework. The mapper generates pairs of items from each input transaction and emits them with the size of the intersection of the corresponding sets. The reducer calculates the Jaccard similarity for each pair based on the intersection and union sizes and emits the result. These scripts can be run in a Hadoop or MapReduce environment to analyze large datasets for similarity between sets. Adjust the input format and delimiter (\t in this case) as per your data
 
 
+ONE FOR PAGE RANK
 
+ChatGPT
+Implementing PageRank in a MapReduce setting involves multiple iterations of calculating the PageRank scores for each node based on the contributions from incoming edges. Below are the mapper.py and reducer.py scripts for the PageRank algorithm:
 
+mapper.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
 
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into node ID and its adjacency list
+    node_id, adjacency_list = line.strip().split('\t')
 
+    # Parse the adjacency list
+    adjacency_list = eval(adjacency_list)
+
+    # Emit the node ID with its adjacency list
+    print('%s\t%s' % (node_id, adjacency_list))
+
+    # Emit each neighbor with its contribution to the node's PageRank
+    if adjacency_list:
+        contribution = 1 / len(adjacency_list)
+        for neighbor in adjacency_list:
+            print('%s\t%s' % (neighbor, contribution))
+reducer.py
+python
+Copy code
+#!/usr/bin/env python
+import sys
+
+# Initialize variables
+current_node = None
+pagerank = 0.0
+adjacency_list = []
+
+# Read input from STDIN
+for line in sys.stdin:
+    # Split the line into node ID and value
+    node_id, value = line.strip().split('\t')
+
+    # If the node ID changes, emit the node ID with its updated PageRank
+    if current_node and node_id != current_node:
+        print('%s\t%s' % (current_node, pagerank))
+
+        # If the node has outgoing edges, emit its adjacency list
+        if adjacency_list:
+            print('%s\t%s' % (current_node, adjacency_list))
+
+        # Reset variables for the new node
+        pagerank = 0.0
+        adjacency_list = []
+
+    # Update current node ID
+    current_node = node_id
+
+    # If the value is a float, it represents a contribution to PageRank
+    if '.' in value:
+        pagerank += float(value)
+    # If the value is a list, it represents an adjacency list
+    else:
+        adjacency_list = value
+
+# Emit the last node's PageRank and adjacency list (if any)
+if current_node:
+    print('%s\t%s' % (current_node, pagerank))
+    if adjacency_list:
+        print('%s\t%s' % (current_node, adjacency_list))
+These scripts implement the Mapper and Reducer for the PageRank algorithm in a MapReduce framework. The mapper emits each node with its adjacency list and the contribution from each neighbor. The reducer aggregates the contributions to calculate the new PageRank for each node. This process is iterated multiple times until convergence to obtain the final PageRank scores for each node. These scripts can be executed in a Hadoop or MapReduce environment to analyze large graphs and calculate PageRank scores.
 
 
 
