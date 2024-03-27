@@ -1,0 +1,134 @@
+
+ You are in sessional of fundamentals of big data analytics lab
+Our first question is on lsh
+There are several topics in bda
+BDA include topics like lsh and map reduce etc in it
+Lsh stand for locality sensitive hashing
+Write a map-reduce job that perform following task,
+You must show the words that occurred in more than one sentence. Also show in which
+sentence they have occurred.
+
+#!/usr/bin/env python
+
+import sys
+import re
+
+# Read lines from standard input
+for line in sys.stdin:
+    # Split the line into sentences
+    sentences = re.split(r'[.!?]', line.strip())
+    
+    # Emit words with the sentence number they occur in
+    for i, sentence in enumerate(sentences):
+        words = re.findall(r'\b\w+\b', sentence.lower())
+        for word in words:
+            # Output word and sentence number
+            print(f"{word}\t{i+1}")  # Adding 1 to sentence number to avoid zero index
+And here's the Reducer script (reducer.py):
+
+python
+Copy code
+#!/usr/bin/env python
+
+import sys
+
+current_word = None
+sentence_numbers = set()
+
+# Read key-value pairs from standard input
+for line in sys.stdin:
+    # Split the input into word and sentence number
+    word, sentence_num = line.strip().split('\t', 1)
+    
+    # Convert sentence number to integer
+    sentence_num = int(sentence_num)
+    
+    # If the word is the same as the previous word, add the sentence number to the set
+    if current_word == word:
+        sentence_numbers.add(sentence_num)
+    else:
+        # If this is a new word, check if the previous word occurred in more than one sentence
+        if current_word is not None and len(sentence_numbers) > 1:
+            # Output the word and the set of sentence numbers it occurred in
+            print(f"{current_word}\t{sorted(list(sentence_numbers))}")
+        
+        # Reset variables for the new word
+        current_word = word
+        sentence_numbers = set([sentence_num])
+
+# Output the last word if needed
+if current_word is not None and len(sentence_numbers) > 1:
+    print(f"{current_word}\t{sorted(list(sentence_numbers))}")
+To use these scripts, you'll need to ensure they have executable permissions (chmod +x mapper.py reducer.py) and then run them in a Hadoop or similar MapReduce environment with your input data.
+
+
+
+mapper.py
+
+def hash_function_H1(shingles):
+    # Sum of ASCII values of the first three characters
+    sum_ascii = sum(ord(ch) for ch in shingles[:3])
+    # Modulo 3
+    return sum_ascii % 3
+
+def hash_function_H2(shingles):
+    # Find the index of the second last '1' in the binary representation of shingles
+    index = -1
+    for i, val in enumerate(reversed(shingles)):
+        if val == 1:
+            if index != -1:
+                return len(shingles) - i
+            index = i
+
+def hash_function_H3(shingles):
+    # Find the minimum hash value
+    return min(shingles)
+
+def generate_signature(set_of_shingles):
+    signature = []
+    # Encode the shingles as binary vectors
+    binary_encoding = [1 if shingle in set_of_shingles else 0 for shingle in ["apple", "banana", "orange", "kiwi", "grape", "mango", "pineapple", "watermelon"]]
+    
+    # Calculate hash values using each hash function
+    h1 = hash_function_H1(binary_encoding)
+    h2 = hash_function_H2(binary_encoding)
+    h3 = hash_function_H3(binary_encoding)
+
+    # Append hash values to the signature
+    signature.append(h1)
+    signature.append(h2)
+    signature.append(h3)
+
+    return signature
+
+# Test the code with the given sets of shingles
+set1 = {"apple", "banana", "orange", "kiwi", "grape"}
+set2 = {"apple", "banana", "mango", "kiwi", "pineapple"}
+set3 = {"apple", "banana", "orange", "grape", "watermelon"}
+
+signature1 = generate_signature(set1)
+signature2 = generate_signature(set2)
+signature3 = generate_signature(set3)
+
+print("Signature for Set 1:", signature1)
+print("Signature for Set 2:", signature2)
+print("Signature for Set 3:", signature3)
+reducer.py
+def calculate_similarity(signature_A, signature_B):
+    # Intersection and union of signatures
+    intersection = [min(a, b) for a, b in zip(signature_A, signature_B)]
+    union = [max(a, b) for a, b in zip(signature_A, signature_B)]
+    
+    # Calculate similarity
+    similarity = intersection[-1] / union[0]
+    
+    return similarity
+
+# Calculate similarity between all three sets
+similarity_1_2 = calculate_similarity(signature1, signature2)
+similarity_1_3 = calculate_similarity(signature1, signature3)
+similarity_2_3 = calculate_similarity(signature2, signature3)
+
+print("Similarity between Set 1 and Set 2:", similarity_1_2)
+print("Similarity between Set 1 and Set 3:", similarity_1_3)
+print("Similarity between Set 2 and Set 3:", similarity_2_3)
